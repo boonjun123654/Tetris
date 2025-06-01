@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>俄罗斯方块（精简版）</title>
+  <style>
+    /* 页面背景 + 居中 */
+    body {
+      margin: 0;
+      background: linear-gradient(to right, #7f5af0, #4f46e5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    /* 游戏大框 */
+    .game-board {
+      background: #111;
+      border: 4px solid #222;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      position: relative;
+    }
+    /* 240×400 画布，20px 为一格，背景为黑色 */
+    #tetris {
+      width: 240px;
+      height: 400px;
+      background: #000;
+      display: block;
+    }
+    /* 下方面板：左右并排 */
+    .bottom-panel {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    /* 信息框和控制框外观 */
+    .info-box, .control-box {
+      background: #1f1f2e;
+      padding: 20px;
+      border-radius: 10px;
+      width: 220px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    /* “下一个方块”和“得分”画布均居中 */
+    #next {
+      background: #000;
+      margin-bottom: 8px;
+      display: block;
+    }
+    #score {
+      font-size: 20px;
+      color: #faae2a;
+    }
+    /* 按钮区域：使用 CSS Grid 定位 */
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 60px);
+      grid-template-rows: repeat(3, 60px);
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      margin-top: 10px;
+    }
+    button {
+      padding: 0;
+      font-size: 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #444;
+      color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #555;
+    }
+    /* 快速下落（硬降落）按钮，占满第三行所有列 */
+    .drop {
+      background: #f25f4c;
+      color: white;
+    }
+    .drop:hover {
+      background: #e14b3b;
+    }
+    /* 软降落和硬降落的按钮文字保持简洁，用符号表示 */
+  </style>
+</head>
+<body>
+
+  <!-- 游戏画布 -->
+  <div class="game-board">
+    <canvas id="tetris" width="240" height="400"></canvas>
+  </div>
+
+  <!-- 下方：左侧“下一个方块+得分”，右侧“按钮面板” -->
+  <div class="bottom-panel">
+    <div class="info-box">
+      <!-- 下一个方块的画布 -->
+      <canvas id="next" width="80" height="80"></canvas>
+      <!-- 只展示数字，无文字标签 -->
+      <div id="score">0</div>
+    </div>
+    <div class="control-box">
+      <div class="buttons">
+        <!-- 第一行：← 旋转 → -->
+        <button onclick="move(-1)">←</button>
+        <button onclick="playerRotate()">⟳</button>
+        <button onclick="move(1)">→</button>
+        <!-- 第二行：  （空） ↓ （空） -->
+        <div></div>
+        <button onclick="playerSoftDrop()">↓</button>
+        <div></div>
+        <!-- 第三行：硬降落，跨 3 列 -->
+        <button class="drop" style="grid-column: 1 / span 3;" onclick="playerHardDrop()">⤓</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**************************************************
+     * 一、全局变量与初始化
+     **************************************************/
+    const canvas = document.getElementById('tetris');
+    const context = canvas.getContext('2d');
+    const nextCanvas = document.getElementById('next');
+    const nextContext = nextCanvas.getContext('2d');
+    const scoreElement = document.getElementById('score');
+
+    // 缩放到 20px 为单位格
+    context.scale(20, 20);
+    nextContext.scale(20, 20);
+
+    // 颜色映射（1~7 种方块）
+    const colors = [
+      null,
+      '#faae2a', // T
+      '#f72585', // O
+      '#3a86ff', // L
+      '#8338ec', // J
+      '#fb5607', // I
+      '#4cc9f0', // S
+      '#06d6a0', // Z
+    ];
+
+    // 创建空棋盘：宽 12，高 20
+    function createMatrix(w, h) {
+      const matrix = [];
+      while (h--) {
+        matrix.push(new Array(w).fill(0));
+      }
+      return matrix;
+    }
+
+    // 根据字母生成对应方块矩阵
+    function createPiece(type) {
+      if (type === 'T') return [[0,1,0],[1,1,1],[0,0,0]];
+      if (type === 'O') return [[2,2],[2,2]];
+      if (type === 'L') return [[0,0,3],[3,3,3],[0,0,0]];
+      if (type === 'J') return [[4,0,0],[4,4,4],[0,0,0]];
+      if (type === 'I') return [[0,5,0,0],[0,5,0,0],[0,5,0,0],[0,5,0,0]];
+      if (type === 'S') return [[0,6,6],[6,6,0],[0,0,0]];
+      if (type === 'Z') return [[7,7,0],[0,7,7],[0,0,0]];
+    }
+
+    // 随机返回“TJLOSZI”之一
+    function randomPieceType() {
+      const types = 'TJLOSZI';
+      return types[Math.floor(types.length * Math.random())];
+    }
+
+    // 棋盘矩阵
+    const arena = createMatrix(12, 20);
+
+    // 玩家状态：位置、当前块、分数
+    const player = {
+      pos: { x: 0, y: 0 },
+      matrix: null,
+      score: 0
+    };
+
+    // 下一个方块
+    let nextPiece = createPiece(randomPieceType());
+
+    /**************************************************
+     * 二、绘制网格（放在最底层）
+     **************************************************/
+    function drawGrid() {
+      // 清空并涂黑背景
+      context.fillStyle = '#000';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 网格线样式
+      context.strokeStyle = '#333';
+      context.lineWidth = 0.05;
+
+      // 竖线：共 13 条（x = 0 到 12）
+      for (let x = 0; x <= 12; x++) {
+        context.beginPath();
+        context.moveTo(x, 0);
+        context.lineTo(x, 20);
+        context.stroke();
+      }
+      // 横线：共 21 条（y = 0 到 20）
+      for (let y = 0; y <= 20; y++) {
+        context.beginPath();
+        context.moveTo(0, y);
+        context.lineTo(12, y);
+        context.stroke();
+      }
+    }
+
+    /**************************************************
+     * 三、绘制方块
+     **************************************************/
+    function drawMatrix(matrix, offset, ctx) {
+      matrix.forEach((row, y) => {
+        row.forEach((value, x) => {
+          if (value !== 0) {
+            ctx.fillStyle = colors[value];
+            ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
+          }
+        });
+      });
+    }
+
+    /**************************************************
+     * 四、主绘制函数：网格 → 固定方块 → 当前方块
+     **************************************************/
+    function draw() {
+      drawGrid();                                 // 先画网格
+      drawMatrix(arena, { x: 0, y: 0 }, context); // 再画固定在棋盘上的方块
+      drawMatrix(player.matrix, player.pos, context); // 最后画当前正在下落的方块
+    }
+
+    /**************************************************
+     * 五、碰撞检测 & 合并
+     **************************************************/
+    function collide(arena, player) {
+      const [m, o] = [player.matrix, player.pos];
+      for (let y = 0; y < m.length; ++y) {
+        for (let x = 0; x < m[y].length; ++x) {
+          if (m[y][x] !== 0 &&
+              (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function merge(arena, player) {
+      player.matrix.forEach((row, y) => {
+        row.forEach((value, x) => {
+          if (value !== 0) {
+            arena[y + player.pos.y][x + player.pos.x] = value;
+          }
+        });
+      });
+    }
+
+    /**************************************************
+     * 六、消行并累加分数
+     **************************************************/
+    function arenaSweep() {
+      let rowCount = 1;
+      outer: for (let y = arena.length - 1; y >= 0; --y) {
+        for (let x = 0; x < arena[y].length; ++x) {
+          if (arena[y][x] === 0) {
+            continue outer;
+          }
+        }
+        arena.splice(y, 1);
+        arena.unshift(new Array(arena[0].length).fill(0));
+        player.score += rowCount * 10;
+        rowCount *= 2;
+        y++;
+      }
+    }
+
+    /**************************************************
+     * 七、方块旋转（顺时针 + 墙踢）
+     **************************************************/
+    function rotateMatrix(matrix) {
+      return matrix[0].map((_, i) => matrix.map(row => row[i]).reverse());
+    }
+    function playerRotate() {
+      const posX = player.pos.x;
+      let offset = 1;
+      player.matrix = rotateMatrix(player.matrix);
+      while (collide(arena, player)) {
+        player.pos.x += offset;
+        offset = -(offset + (offset > 0 ? 1 : -1));
+        if (offset > player.matrix[0].length) {
+          player.matrix = rotateMatrix(player.matrix);
+          player.pos.x = posX;
+          return;
+        }
+      }
+    }
+
+    /**************************************************
+     * 八、下落逻辑
+     **************************************************/
+    // 软降落：每次下移一格并检测
+    function playerSoftDrop() {
+      player.pos.y++;
+      if (collide(arena, player)) {
+        player.pos.y--;
+        merge(arena, player);
+        playerReset();
+        arenaSweep();
+      }
+      dropCounter = 0;
+    }
+    // 硬降落：直接到底
+    function playerHardDrop() {
+      while (!collide(arena, player)) {
+        player.pos.y++;
+      }
+      player.pos.y--;
+      merge(arena, player);
+      playerReset();
+      arenaSweep();
+      dropCounter = 0;
+    }
+    // 左右移动
+    function move(dir) {
+      player.pos.x += dir;
+      if (collide(arena, player)) {
+        player.pos.x -= dir;
+      }
+    }
+
+    /**************************************************
+     * 九、重置方块（当前 ← 下一个 → 生成新“下下一个”）
+     **************************************************/
+    function playerReset() {
+      player.matrix = nextPiece;                     // 当前方块 ← 上次的“下一个”
+      nextPiece = createPiece(randomPieceType());    // 生成新“下一个”
+      drawNext();                                    // 绘制右侧“下一个”画布
+
+      // 放置到顶部中央
+      player.pos.y = 0;
+      player.pos.x = Math.floor(arena[0].length / 2)
+                     - Math.floor(player.matrix[0].length / 2);
+
+      // 如果刚生成就碰撞，说明“顶行被占”，游戏结束，清空棋盘并重置分数
+      if (collide(arena, player)) {
+        arena.forEach(row => row.fill(0));
+        player.score = 0;
+        scoreElement.textContent = player.score;
+      }
+    }
+    // 绘制右侧“下一个方块”
+    function drawNext() {
+      nextContext.fillStyle = "#111";
+      nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+      drawMatrix(nextPiece, { x: 0, y: 0 }, nextContext);
+    }
+
+    /**************************************************
+     * 十、游戏循环
+     **************************************************/
+    let dropCounter = 0;
+    let dropInterval = 1000; // 1秒自然下落
+    let lastTime = 0;
+    function update(time = 0) {
+      const deltaTime = time - lastTime;
+      lastTime = time;
+      dropCounter += deltaTime;
+      if (dropCounter > dropInterval) {
+        playerSoftDrop();
+      }
+      draw();
+      scoreElement.textContent = player.score;
+      requestAnimationFrame(update);
+    }
+
+    /**************************************************
+     * 十一、启动 & 键盘监听
+     **************************************************/
+    // 先重置一次方块
+    playerReset();
+    update();
+    // 支持键盘：←/→/↑/↓/空格
+    document.addEventListener('keydown', event => {
+      switch (event.key) {
+        case 'ArrowLeft':
+          move(-1);
+          break;
+        case 'ArrowRight':
+          move(1);
+          break;
+        case 'ArrowUp':
+          playerRotate();
+          break;
+        case 'ArrowDown':
+          playerSoftDrop();
+          break;
+        case ' ':
+          playerHardDrop();
+          break;
+      }
+    });
+  </script>
+</body>
+</html>
