@@ -4,16 +4,16 @@
   <meta charset="UTF-8"/>
   <!-- 禁止双击放大 & 禁止缩放 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>俄罗斯方块（增强版）</title>
+  <title>俄罗斯方块（全屏响应式版）</title>
   <style>
     /* ==============================
-       1. 页面整体样式
+       1. 页面整体样式：背景 + 内外边距
        ============================== */
     html, body {
       margin: 0;
       padding: 0;
       height: 100vh;
-      overflow: hidden; /* 禁止触发滚动、缩放 */
+      overflow: hidden; /* 禁止滚动和缩放 */
     }
     body {
       background: linear-gradient(to right, #7f5af0, #4f46e5);
@@ -26,27 +26,24 @@
       -webkit-user-select: none;   /* 禁止 iOS 文本选择 */
       -ms-touch-action: manipulation;
       touch-action: manipulation;  /* 禁止双击缩放 */
-      padding-top: 16px;
-      padding-bottom: 16px;
+      padding: 16px;               /* 手机左右各留 16px */
       box-sizing: border-box;
     }
 
     /* ==============================
-       2. 游戏主画布容器
+       2. 游戏主画布容器：100% 宽度自适应
        ============================== */
     .game-board {
-      width: 95vw;
-      max-width: 360px;
-      aspect-ratio: 3 / 5;       /* 保持 240:400 比例 */
-      background: #000;          /* 底色黑 */
+      width: 100%;               /* 铺满父容器（即去掉 max-width:360px 限制） */
+      aspect-ratio: 240 / 400;   /* 保持 240×400 比例 = 3/5 */
+      background: #000;          /* 黑底 */
       border: 4px solid #222;    /* 深色边框 */
       border-radius: 8px;
       box-shadow: 0 0 12px rgba(0,0,0,0.5);
       position: relative;
       overflow: hidden;
-      touch-action: none;
-      /* 不要靠近上边缘 */
-      margin-top: 8px;
+      touch-action: none;        /* 禁止触摸缩放 */
+      margin-top: 8px;           /* 顶部留白 */
     }
     #tetris {
       width: 100%;
@@ -55,18 +52,16 @@
     }
 
     /* ==============================
-       3. 下方并排区域（提示 + 控制）
+       3. 下方并排区域（提示 + 控制）：100% 宽度自适应
        ============================== */
     .bottom-panel {
-      width: 95vw;
-      max-width: 360px;
+      width: 100%;            /* 铺满父容器 */
       display: flex;
       justify-content: space-between;
-      column-gap: 12px;  /* 2号和3号之间留空间 */
-      /* 不要靠近下边缘 */
-      margin-bottom: 8px;
+      column-gap: 12px;       /* 左右两个框之间留 12px */
+      margin-bottom: 8px;     /* 底部留白 */
     }
-    /* 提示框 & 控制框：占父容器宽度的 48% */
+    /* “提示框”（左）和“控制框”（右）各占 48% 宽度 */
     .info-box, .control-box {
       width: 48%;
       background: #1f1f2e;
@@ -76,6 +71,7 @@
       flex-direction: column;
       align-items: center;
       padding: 12px;
+      box-sizing: border-box;
     }
 
     /* ==============================
@@ -89,15 +85,16 @@
       border-radius: 6px;
       display: block;
       margin-bottom: 8px;
+      box-sizing: border-box;
     }
     #score {
       font-size: 20px;
       color: #faae2a;
       margin-bottom: 8px;
     }
-    /* 放大 Logo 到合适 Info 框内大小 */
+    /* Logo 自适应 Info 框宽度，最多占 80% */
     #logo {
-      width: 100px;
+      width: 80%;
       height: auto;
       margin-top: 8px;
       object-fit: contain;
@@ -196,7 +193,7 @@
       width: 100%;
       height: 100%;
       background: rgba(0, 0, 0, 0.7);
-      display: none;            /* 隐藏状态 */
+      display: none;            /* 默认隐藏 */
       align-items: center;
       justify-content: center;
       flex-direction: column;
@@ -245,7 +242,7 @@
 </head>
 <body>
 
-  <!-- ===== 游戏主画布 ===== -->
+  <!-- ===== 游戏主画布（自动适应宽度） ===== -->
   <div class="game-board">
     <canvas id="tetris" width="240" height="400"></canvas>
 
@@ -273,14 +270,17 @@
     </div>
   </div>
 
-  <!-- ===== 下方：提示框（左） + 控制框（右） ===== -->
+  <!-- ===== 下方并排：提示框（左） + 控制框（右） ===== -->
   <div class="bottom-panel">
     <!-- 左侧：下一个方块 + 分数 + Logo -->
     <div class="info-box">
       <canvas id="next" width="80" height="80"></canvas>
       <div id="score">0</div>
-      <!-- 直接使用 Base64 Data URI 嵌入 Logo 图像 -->
-      <img id="logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA+gAAAH0CAYAAACuKActAAAAAXNSR0IArs4c6QAAAIRlWElmTU0AKgAAAAgABQESAAMAAAABAAEA..." alt="GameBot Logo"/>
+      <!-- 使用完整的 Base64 Data URI -->
+      <img id="logo" 
+           src="data:image/png;base64, 
+           YOUR_FULL_BASE64_STRING_HERE" 
+           alt="GameBot Logo"/>
     </div>
 
     <!-- 右侧：按钮网格 -->
@@ -313,7 +313,7 @@
     const startModal = document.getElementById('startModal');
     const finalScoreElement = document.getElementById('finalScore');
 
-    // 禁止双击缩放
+    // 禁止双击缩放（多指触摸时阻止默认放大）
     canvas.addEventListener('touchstart', e => {
       if (e.touches.length > 1) {
         e.preventDefault();
@@ -327,16 +327,16 @@
     // 7 种方块颜色（带发光阴影）
     const colors = [
       null,
-      '#00ffff', // I (青色)
-      '#ffdd00', // O (黄色)
-      '#ff8800', // L (橙色)
-      '#0000ff', // J (蓝色)
-      '#aa00ff', // T (紫色)
-      '#00ff00', // S (绿色)
-      '#ff0000', // Z (红色)
+      '#00ffff', // I (青)
+      '#ffdd00', // O (黄)
+      '#ff8800', // L (橙)
+      '#0000ff', // J (蓝)
+      '#aa00ff', // T (紫)
+      '#00ff00', // S (绿)
+      '#ff0000', // Z (红)
     ];
 
-    // 创建宽 w、高 h 的空棋盘矩阵（全 0）
+    // 创建 w×h 的空棋盘（全 0）
     function createMatrix(w, h) {
       const matrix = [];
       while (h--) {
@@ -344,8 +344,7 @@
       }
       return matrix;
     }
-
-    // 根据类型字符返回对应的方块矩阵
+    // 根据类型返回对应方块矩阵
     function createPiece(type) {
       if (type === 'I') return [[5,5,5,5],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
       if (type === 'O') return [[2,2],[2,2]];
@@ -355,53 +354,47 @@
       if (type === 'S') return [[0,6,6],[6,6,0],[0,0,0]];
       if (type === 'Z') return [[7,7,0],[0,7,7],[0,0,0]];
     }
-
-    // 随机返回 'IOTSZJL'之一
+    // 随机返回 'IOTSZJL' 之一
     function randomPieceType() {
       const types = 'IOTSZJL';
       return types[Math.floor(types.length * Math.random())];
     }
 
-    // 棋盘矩阵：12 列 × 20 行
+    // 棋盘：12 列 × 20 行
     let arena = createMatrix(12, 20);
 
-    // player 对象：存储当前位置、当前方块矩阵、得分
+    // player 对象：当前方块、位置、得分
     const player = {
       pos: { x: 0, y: 0 },
       matrix: null,
       score: 0
     };
-
-    // 下一个方块矩阵
     let nextPiece = createPiece(randomPieceType());
 
-    // 下落速度（ms），初始尚未选择
+    // 下落速度（ms），待 startGame 时赋值
     let dropInterval = null;
     let dropCounter = 0;
     let lastTime = 0;
     let gameActive = false;
 
     /* =====================================================
-       二、绘制网格（drawGrid）
-       - 黑底 + 细网格线
+       二、绘制背景网格（drawGrid）
+       - 黑底 + 细灰色网格线
        ===================================================== */
     function drawGrid() {
-      // 1. 黑底
+      // 黑底
       context.fillStyle = '#000';
       context.fillRect(0, 0, canvas.width, canvas.height);
 
-      // 2. 细网格线
-      context.strokeStyle = '#333'; // 深灰色网格线
-      context.lineWidth = 0.05;     // 缩放后约 1px
-
-      // 2.1 竖线：x 从 0 到 12（共 13 条）
+      // 细灰网格线
+      context.strokeStyle = '#333';
+      context.lineWidth = 0.05; // 1px 大小（缩放后）
       for (let x = 0; x <= 12; x++) {
         context.beginPath();
         context.moveTo(x, 0);
         context.lineTo(x, 20);
         context.stroke();
       }
-      // 2.2 横线：y 从 0 到 20（共 21 条）
       for (let y = 0; y <= 20; y++) {
         context.beginPath();
         context.moveTo(0, y);
@@ -437,9 +430,9 @@
        四、主绘制函数（draw）
        ===================================================== */
     function draw() {
-      drawGrid();                                 // 先画网格
-      drawMatrix(arena, { x: 0, y: 0 }, context); // 再画已固定方块
-      drawMatrix(player.matrix, player.pos, context); // 最后画当前方块
+      drawGrid();                                 // 先绘制网格
+      drawMatrix(arena, { x: 0, y: 0 }, context); // 再绘制已固定方块
+      drawMatrix(player.matrix, player.pos, context); // 最后绘制当前方块
     }
 
     /* =====================================================
@@ -449,8 +442,10 @@
       const [m, o] = [player.matrix, player.pos];
       for (let y = 0; y < m.length; ++y) {
         for (let x = 0; x < m[y].length; ++x) {
-          if (m[y][x] !== 0 &&
-              (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) {
+          if (
+            m[y][x] !== 0 &&
+            (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0
+          ) {
             return true;
           }
         }
@@ -491,7 +486,9 @@
        七、方块旋转（顺时针 + 墙踢）
        ===================================================== */
     function rotateMatrix(matrix) {
-      return matrix[0].map((_, i) => matrix.map(row => row[i]).reverse());
+      return matrix[0].map((_, i) =>
+        matrix.map(row => row[i]).reverse()
+      );
     }
     function playerRotate() {
       const posX = player.pos.x;
@@ -524,7 +521,9 @@
     }
     function playerHardDrop() {
       if (!gameActive) return;
-      while (!collide(arena, player)) { player.pos.y++; }
+      while (!collide(arena, player)) {
+        player.pos.y++;
+      }
       player.pos.y--;
       merge(arena, player);
       arenaSweep();
