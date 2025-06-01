@@ -20,12 +20,15 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between; /* 上下留空 */
       font-family: Arial, sans-serif;
       -webkit-touch-callout: none; /* 禁止 iOS 长按弹出菜单 */
       -webkit-user-select: none;   /* 禁止 iOS 文本选择 */
       -ms-touch-action: manipulation;
       touch-action: manipulation;  /* 禁止双击缩放 */
+      padding-top: 16px;
+      padding-bottom: 16px;
+      box-sizing: border-box;
     }
 
     /* ==============================
@@ -42,6 +45,8 @@
       position: relative;
       overflow: hidden;
       touch-action: none;
+      /* 不要靠近上边缘 */
+      margin-top: 8px;
     }
     #tetris {
       width: 100%;
@@ -57,8 +62,9 @@
       max-width: 360px;
       display: flex;
       justify-content: space-between;
-      margin-top: 16px;
       column-gap: 12px;  /* 2号和3号之间留空间 */
+      /* 不要靠近下边缘 */
+      margin-bottom: 8px;
     }
     /* 提示框 & 控制框：占父容器宽度的 48% */
     .info-box, .control-box {
@@ -89,10 +95,10 @@
       color: #faae2a;
       margin-bottom: 8px;
     }
-    /* GameBot Logo */
+    /* 放大 Logo 到合适 Info 框内大小 */
     #logo {
-      width: 60px;
-      height: 60px;
+      width: 100px;
+      height: auto;
       margin-top: 8px;
       object-fit: contain;
     }
@@ -273,8 +279,8 @@
     <div class="info-box">
       <canvas id="next" width="80" height="80"></canvas>
       <div id="score">0</div>
-      <!-- GameBot Logo：请将 logo.png 放在同一目录下 -->
-      <img id="logo" src="logo.png" alt="GameBot Logo"/>
+      <!-- 直接使用 Base64 Data URI 嵌入 Logo 图像 -->
+      <img id="logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA+gAAAH0CAYAAACuKActAAAAAXNSR0IArs4c6QAAAIRlWElmTU0AKgAAAAgABQESAAMAAAABAAEA..." alt="GameBot Logo"/>
     </div>
 
     <!-- 右侧：按钮网格 -->
@@ -518,9 +524,7 @@
     }
     function playerHardDrop() {
       if (!gameActive) return;
-      while (!collide(arena, player)) {
-        player.pos.y++;
-      }
+      while (!collide(arena, player)) { player.pos.y++; }
       player.pos.y--;
       merge(arena, player);
       arenaSweep();
@@ -539,16 +543,13 @@
        九、重置当前方块 或 触发游戏结束
        ===================================================== */
     function playerResetOrGameOver() {
-      // 先把 nextPiece → 当前
       player.matrix = nextPiece;
-      // 再生成新的 nextPiece
       nextPiece = createPiece(randomPieceType());
       drawNext();
       player.pos.y = 0;
       player.pos.x = Math.floor(arena[0].length / 2) -
                      Math.floor(player.matrix[0].length / 2);
 
-      // 如果一生成就碰撞 → 游戏结束
       if (collide(arena, player)) {
         showGameOver();
       }
@@ -574,7 +575,7 @@
        十二、游戏循环函数
        ===================================================== */
     function update(time = 0) {
-      if (!gameActive) return; // 若游戏未激活，不执行动画
+      if (!gameActive) return;
       const deltaTime = time - lastTime;
       lastTime = time;
       dropCounter += deltaTime;
@@ -601,14 +602,10 @@
     function startGame(interval) {
       dropInterval = interval;
       gameActive = true;
-      // 隐藏开始弹窗
       startModal.style.display = 'none';
-      // 清空棋盘
       arena = createMatrix(12, 20);
-      // 重置分数
       player.score = 0;
       updateScore();
-      // 初始化第一个方块和下一个
       player.matrix = createPiece(randomPieceType());
       player.pos.y = 0;
       player.pos.x = Math.floor(arena[0].length / 2) -
@@ -627,11 +624,9 @@
       dropInterval = interval;
       gameActive = true;
       gameOverModal.style.display = 'none';
-      // 清空棋盘
       arena = createMatrix(12, 20);
       player.score = 0;
       updateScore();
-      // 初始化第一个方块和下一个
       player.matrix = createPiece(randomPieceType());
       player.pos.y = 0;
       player.pos.x = Math.floor(arena[0].length / 2) -
