@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>俄罗斯方块（响应式版）</title>
+  <title>俄罗斯方块（美化版）</title>
   <style>
-    /* ==========================================
-       1. 页面整体样式：背景渐变 + 垂直居中
-       ========================================== */
+    /* ========== 1. 全局页面样式 ========== */
     html, body {
       margin: 0;
       padding: 0;
@@ -22,98 +20,68 @@
       font-family: Arial, sans-serif;
     }
 
-    /* ==========================================
-       2. 游戏框（.game-board）样式
-       - 宽度 95vw（手机上几乎全宽），最大不超过 360px(可按需调整)
-       - 保持 240×400 的宽高比（aspect-ratio: 240/400 = 3/5）
-       - 圆角边框 + 阴影
-       ========================================== */
+    /* ========== 2. 游戏主画布容器 ========== */
     .game-board {
       width: 95vw;
       max-width: 360px;
-      aspect-ratio: 3 / 5;   /* 保持 240:400 比例 */
-      background: #000;      /* Canvas 背景设为黑色 */
-      border: 4px solid #222;
+      aspect-ratio: 3 / 5;       /* 保持 240:400 比例 */
+      background: #000;          /* 底色黑 */
+      border: 4px solid #222;    /* 深色边框 */
       border-radius: 8px;
       box-shadow: 0 0 12px rgba(0,0,0,0.5);
       position: relative;
       overflow: hidden;
     }
-    /* 画布占满父容器，并覆盖整个 .game-board 区域 */
     #tetris {
       width: 100%;
       height: 100%;
       display: block;
     }
 
-    /* ==========================================
-       3. 下方并列区域（.bottom-panel）
-       - 宽度与 .game-board 保持一致
-       - 使用 flex 并排
-       ========================================== */
+    /* ========== 3. 下方并排区域（提示 + 控制） ========== */
     .bottom-panel {
       width: 95vw;
       max-width: 360px;
       display: flex;
       justify-content: space-between;
-      margin-top: 16px;   /* 与游戏框之间留一些空隙 */
+      margin-top: 16px;
     }
-
-    /* ==========================================
-       4. “提示框” 与 “按键框”共同的公用样式
-       - 背景色、圆角、阴影
-       - 垂直方向居中对齐内容
-       ========================================== */
-    .info-box,
-    .control-box {
+    /* 提示框 & 控制框：宽度占 48%，高度自适应，但要更“横向” */
+    .info-box, .control-box {
+      width: 48%;
       background: #1f1f2e;
       border-radius: 8px;
       box-shadow: 0 0 6px rgba(0,0,0,0.3);
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-    }
-    /* 各占父容器宽度的 48%（留 4% 间隙） */
-    .info-box,
-    .control-box {
-      width: 48%;
+      padding: 12px;
     }
 
-    /* ==========================================
-       5. “下一个方块”小画布 (#next) 样式
-       - 宽高固定为 80×80，边框圆角
-       ========================================== */
+    /* ========== 4. “下一个方块”及“得分” ========== */
     #next {
       width: 80px;
       height: 80px;
-      background: #000;
+      background: #111;
       border: 2px solid #333;
       border-radius: 6px;
       display: block;
       margin-bottom: 8px;
     }
-    /* 分数数字样式 */
     #score {
       font-size: 20px;
       color: #faae2a;
     }
 
-    /* ==========================================
-       6. 控制按钮面板 (.buttons)
-       - 使用 3 列 × 3 行的 CSS Grid
-       - 每格 60×60（可根据实际调节）
-       - 按钮圆角、阴影
-       ========================================== */
+    /* ========== 5. 控制按钮布局 ========== */
     .buttons {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       grid-template-rows: repeat(3, 60px);
       gap: 10px;
       width: 100%;
-      padding: 8px 0;
+      margin-top: 8px;
     }
-    /* 通用按钮样式 */
     .buttons button {
       margin: 0;
       padding: 0;
@@ -126,12 +94,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.1s;
     }
     .buttons button:hover {
       background: #555;
     }
-    /* 硬降落按钮（跨 3 列） */
+    .buttons button:active {
+      transform: scale(0.95);
+    }
+    /* 硬降落按钮跨 3 列 */
     .buttons .drop {
       background: #f25f4c;
       grid-column: 1 / span 3;
@@ -139,72 +110,125 @@
     .buttons .drop:hover {
       background: #e14b3b;
     }
+
+    /* ========== 6. 游戏结束弹窗 ========== */
+    #gameOverModal {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;            /* 隐藏状态 */
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    #gameOverContent {
+      background: #1f1f2e;
+      border-radius: 8px;
+      padding: 20px 24px;
+      text-align: center;
+      color: white;
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+    }
+    #gameOverContent h2 {
+      margin: 0 0 8px;
+      font-size: 24px;
+    }
+    #gameOverContent p {
+      margin: 0 0 16px;
+      font-size: 20px;
+    }
+    #restartButton {
+      padding: 8px 16px;
+      font-size: 18px;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      transition: background 0.2s, transform 0.1s;
+    }
+    #restartButton:hover {
+      background: #4338ca;
+    }
+    #restartButton:active {
+      transform: scale(0.95);
+    }
   </style>
 </head>
 <body>
 
-  <!-- ============================
-       一、游戏主画布（.game-board）
-       ============================ -->
+  <!-- ========== 游戏主画布 ========= -->
   <div class="game-board">
-    <!-- Canvas 逻辑大小仍为 240 × 400（12 × 20 个方块格） -->
     <canvas id="tetris" width="240" height="400"></canvas>
+
+    <!-- 游戏结束弹窗 -->
+    <div id="gameOverModal">
+      <div id="gameOverContent">
+        <h2>游戏结束!</h2>
+        <p>最终分数: <span id="finalScore">0</span></p>
+        <button id="restartButton">重新开始</button>
+      </div>
+    </div>
   </div>
 
-  <!-- ============================
-       二、下方并排区域：提示框 + 按键框
-       ============================ -->
+  <!-- ========== 下方：提示框（左） + 控制框（右） ========== -->
   <div class="bottom-panel">
-    <!-- 左侧：提示框（显示“下一个方块”与分数） -->
+    <!-- 左侧：下一个方块 + 分数 -->
     <div class="info-box">
       <canvas id="next" width="80" height="80"></canvas>
       <div id="score">0</div>
     </div>
 
-    <!-- 右侧：按钮框（左右移动、旋转、软降落、硬降落） -->
+    <!-- 右侧：按钮网格 -->
     <div class="control-box">
       <div class="buttons">
         <!-- 第一行：←、⟳、→ -->
         <button onclick="move(-1)">←</button>
         <button onclick="playerRotate()">⟳</button>
         <button onclick="move(1)">→</button>
-        <!-- 第二行：留空、↓、留空 -->
+        <!-- 第二行：左右留空，中间↓（软降落） -->
         <div></div>
         <button onclick="playerSoftDrop()">↓</button>
         <div></div>
-        <!-- 第三行：硬降落（跨三格） -->
+        <!-- 第三行：跨三列的硬降落 -->
         <button class="drop" onclick="playerHardDrop()">⤓</button>
       </div>
     </div>
   </div>
 
   <script>
-    /************************************************
-     * 一、全局变量与初始化
-     ************************************************/
+    /* =====================================================
+       一、全局变量与初始化
+       ===================================================== */
     const canvas = document.getElementById('tetris');
     const context = canvas.getContext('2d');
     const nextCanvas = document.getElementById('next');
     const nextContext = nextCanvas.getContext('2d');
     const scoreElement = document.getElementById('score');
+    const gameOverModal = document.getElementById('gameOverModal');
+    const finalScoreElement = document.getElementById('finalScore');
+    const restartButton = document.getElementById('restartButton');
 
-    // 将绘图坐标等比放大：20 × 20 像素 = 1 单位
+    // 缩放 Canvas 坐标：20×20 像素 = 1 单位
     context.scale(20, 20);
     nextContext.scale(20, 20);
 
-    // 7 种方块对应的填充颜色（索引从 1 到 7）
+    // 方块颜色（带渐变效果时会做阴影）
     const colors = [
       null,
-      '#faae2a', // T
-      '#f72585', // O
-      '#3a86ff', // L
-      '#8338ec', // J
-      '#fb5607', // I
-      '#4cc9f0', // S
-      '#06d6a0', // Z
+      '#00ffff', // I (青色)
+      '#ffdd00', // O (黄色)
+      '#ff8800', // L (橙色)
+      '#0000ff', // J (蓝色)
+      '#aa00ff', // T (紫色)
+      '#00ff00', // S (绿色)
+      '#ff0000', // Z (红色)
     ];
 
-    // 创建宽 w、高 h 的空棋盘（二维数组，初始填 0）
+    // 创建宽 w，高 h 的空棋盘矩阵（全 0）
     function createMatrix(w, h) {
       const matrix = [];
       while (h--) {
@@ -213,48 +237,47 @@
       return matrix;
     }
 
-    // 根据方块类型返回对应的矩阵（3×3 或 4×4）
+    // 根据类型字符返回矩阵（方块形状）
     function createPiece(type) {
-      if (type === 'T') return [[0,1,0],[1,1,1],[0,0,0]];
+      if (type === 'T') return [[0,0,0],[1,1,1],[0,1,0]];
       if (type === 'O') return [[2,2],[2,2]];
       if (type === 'L') return [[0,0,3],[3,3,3],[0,0,0]];
       if (type === 'J') return [[4,0,0],[4,4,4],[0,0,0]];
-      if (type === 'I') return [[0,5,0,0],[0,5,0,0],[0,5,0,0],[0,5,0,0]];
+      if (type === 'I') return [[5,5,5,5],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
       if (type === 'S') return [[0,6,6],[6,6,0],[0,0,0]];
       if (type === 'Z') return [[7,7,0],[0,7,7],[0,0,0]];
     }
 
-    // 随机返回 'TJLOSZI' 中的一个字母
+    // 随机返回 'IOTSZJL'之一
     function randomPieceType() {
-      const types = 'TJLOSZI';
+      const types = 'IOTSZJL';
       return types[Math.floor(types.length * Math.random())];
     }
 
-    // 棋盘矩阵：12 列 × 20 行
+    // 棋盘（12 列 × 20 行）
     const arena = createMatrix(12, 20);
 
-    // player 对象：存储当前方块位置、矩阵与得分
+    // player 对象：当前位置、当前方块矩阵、得分
     const player = {
       pos: { x: 0, y: 0 },
       matrix: null,
       score: 0
     };
 
-    // nextPiece：下一个方块矩阵
+    // 下一个方块矩阵
     let nextPiece = createPiece(randomPieceType());
 
-    /************************************************
-     * 二、绘制网格（drawGrid）
-     *    - 在最底层画黑底 + 细线网格
-     ************************************************/
+    /* =====================================================
+       二、绘制网格（drawGrid）——底层黑底 + 细网格线
+       ===================================================== */
     function drawGrid() {
-      // 1. 先涂黑整个 Canvas
+      // 1. 黑底
       context.fillStyle = '#000';
       context.fillRect(0, 0, canvas.width, canvas.height);
 
-      // 2. 绘制网格线
-      context.strokeStyle = '#333';  // 深灰色网格线
-      context.lineWidth = 0.05;      // 缩放后约 1px 宽度
+      // 2. 细网格线
+      context.strokeStyle = '#333'; // 深灰网格线
+      context.lineWidth = 0.05;     // 缩放后约1px
 
       // 2.1 竖线：x 从 0 到 12（共 13 条）
       for (let x = 0; x <= 12; x++) {
@@ -272,33 +295,46 @@
       }
     }
 
-    /************************************************
-     * 三、绘制方块（drawMatrix）
-     ************************************************/
+    /* =====================================================
+       三、绘制方块（drawMatrix），带渐变阴影 + 边框
+       ===================================================== */
     function drawMatrix(matrix, offset, ctx) {
       matrix.forEach((row, y) => {
         row.forEach((value, x) => {
           if (value !== 0) {
+            // 保存上下文，设置阴影
+            ctx.save();
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = colors[value];
+            // 填充方块主体
             ctx.fillStyle = colors[value];
             ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
+            // 去除阴影，绘制边框
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 0.05;
+            ctx.strokeRect(x + offset.x, y + offset.y, 1, 1);
+            ctx.restore();
           }
         });
       });
     }
 
-    /************************************************
-     * 四、主绘制函数（draw）
-     *    - 先画网格再画固定与当前方块
-     ************************************************/
+    /* =====================================================
+       四、主绘制逻辑（draw）
+       ===================================================== */
     function draw() {
-      drawGrid();                                 // 最底层：网格
-      drawMatrix(arena, { x: 0, y: 0 }, context); // 中间层：已固定在棋盘上的方块
-      drawMatrix(player.matrix, player.pos, context); // 顶层：当前可操作方块
+      // 1. 先画网格（背景黑 + 网格线）
+      drawGrid();
+      // 2. 绘制已固定在棋盘上的方块
+      drawMatrix(arena, { x: 0, y: 0 }, context);
+      // 3. 绘制当前正在下落的方块
+      drawMatrix(player.matrix, player.pos, context);
     }
 
-    /************************************************
-     * 五、碰撞检测与合并
-     ************************************************/
+    /* =====================================================
+       五、碰撞检测 & 合并
+       ===================================================== */
     function collide(arena, player) {
       const [m, o] = [player.matrix, player.pos];
       for (let y = 0; y < m.length; ++y) {
@@ -311,6 +347,7 @@
       }
       return false;
     }
+
     function merge(arena, player) {
       player.matrix.forEach((row, y) => {
         row.forEach((value, x) => {
@@ -321,9 +358,9 @@
       });
     }
 
-    /************************************************
-     * 六、消行并更新得分
-     ************************************************/
+    /* =====================================================
+       六、消行并更新分数
+       ===================================================== */
     function arenaSweep() {
       let rowCount = 1;
       outer: for (let y = arena.length - 1; y >= 0; --y) {
@@ -332,20 +369,20 @@
             continue outer;
           }
         }
-        // 删除已满行
+        // 删除该行
         arena.splice(y, 1);
-        // 在顶部插入空行
+        // 在顶部添加空行
         arena.unshift(new Array(arena[0].length).fill(0));
-        // 分数累加：连消加成
+        // 更新分数：连消加成
         player.score += rowCount * 10;
         rowCount *= 2;
         y++;
       }
     }
 
-    /************************************************
-     * 七、方块旋转（顺时针 + 墙踢）
-     ************************************************/
+    /* =====================================================
+       七、方块旋转（顺时针 + 墙踢）
+       ===================================================== */
     function rotateMatrix(matrix) {
       return matrix[0].map((_, i) => matrix.map(row => row[i]).reverse());
     }
@@ -364,29 +401,31 @@
       }
     }
 
-    /************************************************
-     * 八、下落逻辑
-     ************************************************/
-    // 软降落：每次下移一格并检测碰撞
+    /* =====================================================
+       八、下落逻辑
+       ===================================================== */
+    // 软降落：每次下移一格并检测
     function playerSoftDrop() {
       player.pos.y++;
       if (collide(arena, player)) {
         player.pos.y--;
         merge(arena, player);
-        playerReset();
         arenaSweep();
+        updateScore();
+        playerResetOrGameOver();
       }
       dropCounter = 0;
     }
-    // 硬降落：一直下到无法移动
+    // 硬降落：直接到底
     function playerHardDrop() {
       while (!collide(arena, player)) {
         player.pos.y++;
       }
       player.pos.y--;
       merge(arena, player);
-      playerReset();
       arenaSweep();
+      updateScore();
+      playerResetOrGameOver();
       dropCounter = 0;
     }
     // 左右移动
@@ -397,40 +436,46 @@
       }
     }
 
-    /************************************************
-     * 九、重置当前方块（当前 ← 下一个、生成新下一个）
-     ************************************************/
-    function playerReset() {
-      // 1. 当前方块 ← 上一次 的 nextPiece
+    /* =====================================================
+       九、重置当前方块或触发游戏结束
+       ===================================================== */
+    function playerResetOrGameOver() {
+      // 当玩家方块固定后，要把“下一个” → “当前”，然后生成新的“下一个”。
       player.matrix = nextPiece;
-      // 2. 生成新的 nextPiece
       nextPiece = createPiece(randomPieceType());
-      // 3. 绘制右侧“下一个方块”小画布
       drawNext();
 
-      // 4. 把玩家方块放到顶部中央
       player.pos.y = 0;
-      player.pos.x = Math.floor(arena[0].length / 2)
-                     - Math.floor(player.matrix[0].length / 2);
+      player.pos.x = Math.floor(arena[0].length / 2) -
+                     Math.floor(player.matrix[0].length / 2);
 
-      // 5. 如果一生成就碰撞，说明顶行被占满 → 清空棋盘 & 重置分数
+      // 如果一生成就立即碰撞 → 游戏结束
       if (collide(arena, player)) {
-        arena.forEach(row => row.fill(0));
-        player.score = 0;
-        scoreElement.textContent = player.score;
+        showGameOver();
       }
     }
+
+    /* =====================================================
+       十、绘制“下一个方块”
+       ===================================================== */
     function drawNext() {
-      nextContext.fillStyle = "#111";
+      nextContext.fillStyle = '#111';
       nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
       drawMatrix(nextPiece, { x: 0, y: 0 }, nextContext);
     }
 
-    /************************************************
-     * 十、主循环（自然下落 + 重绘）
-     ************************************************/
+    /* =====================================================
+       十一、更新分数到页面
+       ===================================================== */
+    function updateScore() {
+      scoreElement.textContent = player.score;
+    }
+
+    /* =====================================================
+       十二、游戏循环
+       ===================================================== */
     let dropCounter = 0;
-    let dropInterval = 1000; // 1 秒掉一格
+    let dropInterval = 1000; // 1 秒自然下落一次
     let lastTime = 0;
     function update(time = 0) {
       const deltaTime = time - lastTime;
@@ -440,15 +485,46 @@
         playerSoftDrop();
       }
       draw();
-      scoreElement.textContent = player.score;
+      updateScore();
       requestAnimationFrame(update);
     }
 
-    /************************************************
-     * 十一、启动游戏 & 键盘监听
-     ************************************************/
-    playerReset();
+    /* =====================================================
+       十三、游戏结束弹窗 & 重新开始
+       ===================================================== */
+    function showGameOver() {
+      finalScoreElement.textContent = player.score;
+      gameOverModal.style.display = 'flex';
+    }
+    function hideGameOver() {
+      gameOverModal.style.display = 'none';
+      // 清空棋盘并重置分数
+      arena.forEach(row => row.fill(0));
+      player.score = 0;
+      updateScore();
+      // 重置第一个方块
+      player.matrix = createPiece(randomPieceType());
+      player.pos.y = 0;
+      player.pos.x = Math.floor(arena[0].length / 2) -
+                     Math.floor(player.matrix[0].length / 2);
+      // 生成一个新的下一个方块并绘制
+      nextPiece = createPiece(randomPieceType());
+      drawNext();
+    }
+    restartButton.addEventListener('click', hideGameOver);
+
+    /* =====================================================
+       十四、启动游戏 & 键盘监听
+       ===================================================== */
+    // 初始化“当前方块”和“下一个方块”
+    player.matrix = createPiece(randomPieceType());
+    player.pos.y = 0;
+    player.pos.x = Math.floor(arena[0].length / 2) -
+                   Math.floor(player.matrix[0].length / 2);
+    drawNext();
     update();
+
+    // 监听键盘：←/→/↑/↓/空格
     document.addEventListener('keydown', event => {
       switch (event.key) {
         case 'ArrowLeft':
