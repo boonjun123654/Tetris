@@ -27,12 +27,9 @@
        2. 游戏主画布容器
        ============================== */
 .game-board {
+  height: 400px;
   width: 95vw;
   max-width: 360px;
-
-  /* 重点：不要再用 aspect-ratio 给固定高度，
-     改用 flex: 1 1 auto 来占满剩余高度 */
-  flex: 1 1 auto;
 
   background: #000;
   border: 4px solid #222;
