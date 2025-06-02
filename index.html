@@ -1,52 +1,60 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8"/>
+  <meta charset="UTF-8" />
   <!-- 禁止双击放大 & 禁止缩放 -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>俄罗斯方块（增强版）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>俄罗斯方块（最终修正版）</title>
   <style>
-    /* ==============================
-       1. 页面整体样式
-       ============================== */
+    /* =====================================================
+       1. 页面整体样式：背景 + 安全区 + 内外边距
+       ===================================================== */
     html, body {
       margin: 0;
       padding: 0;
       height: 100vh;
-      overflow: hidden; /* 禁止触发滚动、缩放 */
+      overflow: hidden; /* 禁止滚动和双击缩放 */
     }
     body {
       background: linear-gradient(to right, #7f5af0, #4f46e5);
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between; /* 上下留空 */
+      justify-content: center;
+      padding: env(safe-area-inset-top, 24px) 16px env(safe-area-inset-bottom, 16px);
+      box-sizing: border-box;
       font-family: Arial, sans-serif;
-      -webkit-touch-callout: none; /* 禁止 iOS 长按弹出菜单 */
+      -webkit-touch-callout: none; /* 禁止 iOS 长按菜单 */
       -webkit-user-select: none;   /* 禁止 iOS 文本选择 */
       -ms-touch-action: manipulation;
       touch-action: manipulation;  /* 禁止双击缩放 */
-      padding-top: 16px;
-      padding-bottom: 16px;
+    }
+
+    /* =====================================================
+       2. 外层容器：自动居中并限制最大宽度
+       ===================================================== */
+    .container {
+      width: 100%;
+      max-width: 600px;      /* 在宽屏上限制最大宽度 */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       box-sizing: border-box;
     }
 
-    /* ==============================
-       2. 游戏主画布容器
-       ============================== */
+    /* =====================================================
+       3. 游戏画布（.game-board）：宽度 100%，保持 3:5 比例
+       ===================================================== */
     .game-board {
-      width: 95vw;
-      max-width: 360px;
-      aspect-ratio: 3 / 5;       /* 保持 240:400 比例 */
-      background: #000;          /* 底色黑 */
-      border: 4px solid #222;    /* 深色边框 */
+      width: 100%;
+      aspect-ratio: 240 / 400; /* 保持 240 列 × 400 行 的比例 */
+      background: #000;
+      border: 4px solid #222;
       border-radius: 8px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.5);
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
       position: relative;
       overflow: hidden;
-      touch-action: none;
-      /* 不要靠近上边缘 */
-      margin-top: 8px;
+      margin-top: 24px;    /* 顶部留白 */
+      margin-bottom: 16px; /* 底部留白 */
+      touch-action: none;  /* 禁止触摸缩放 */
     }
     #tetris {
       width: 100%;
@@ -54,99 +62,113 @@
       display: block;
     }
 
-    /* ==============================
-       3. 下方并排区域（提示 + 控制）
-       ============================== */
+    /* =====================================================
+       4. 下方并排区域（.bottom-panel）：宽度 100%，并排两个框
+       ===================================================== */
     .bottom-panel {
-      width: 95vw;
-      max-width: 360px;
+      width: 100%;
       display: flex;
       justify-content: space-between;
-      column-gap: 12px;  /* 2号和3号之间留空间 */
-      /* 不要靠近下边缘 */
-      margin-bottom: 8px;
+      column-gap: 12px;                       /* 左右两个框之间留 12px */
+      padding-bottom: env(safe-area-inset-bottom, 16px); /* 底部安全区 */
+      box-sizing: border-box;
     }
-    /* 提示框 & 控制框：占父容器宽度的 48% */
+    /* “提示框”（左）和“控制框”（右）各占 48% */
     .info-box, .control-box {
       width: 48%;
       background: #1f1f2e;
       border-radius: 8px;
-      box-shadow: 0 0 6px rgba(0,0,0,0.3);
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
       display: flex;
       flex-direction: column;
       align-items: center;
       padding: 12px;
+      box-sizing: border-box;
     }
 
-    /* ==============================
-       4. “下一个方块”+ 分数 + Logo
-       ============================== */
+    /* =====================================================
+       5. “下一个方块” + Logo
+       ===================================================== */
     #next {
       width: 80px;
       height: 80px;
       background: #111;
       border: 2px solid #333;
       border-radius: 6px;
-      display: block;
-      margin-bottom: 8px;
+      margin: 0 auto 8px; /* 水平居中并留底部间距 */
+      box-sizing: border-box;
     }
-    #score {
-      font-size: 20px;
-      color: #faae2a;
-      margin-bottom: 8px;
-    }
-    /* 放大 Logo 到合适 Info 框内大小 */
     #logo {
-      width: 100px;
+      width: 80%;
       height: auto;
       margin-top: 8px;
       object-fit: contain;
     }
 
-    /* ==============================
-       5. 控制按钮布局
-       ============================== */
-    .buttons {
+    /* =====================================================
+       6. 控制按钮布局：两行设计
+       ===================================================== */
+    .control-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 60px);
-      gap: 10px;
+      gap: 8px;
       width: 100%;
-      margin-top: 8px;
+      margin-bottom: 12px;
+      box-sizing: border-box;
     }
-    .buttons button {
-      margin: 0;
+    .control-grid button {
       padding: 0;
       font-size: 24px;
       background: #444;
       color: #fff;
       border: none;
       border-radius: 6px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       display: flex;
       align-items: center;
       justify-content: center;
       transition: background 0.2s, transform 0.1s;
       touch-action: manipulation;
     }
-    .buttons button:hover {
+    .control-grid button:hover {
       background: #555;
     }
-    .buttons button:active {
+    .control-grid button:active {
       transform: scale(0.95);
     }
-    /* 硬降落按钮跨三列 */
-    .buttons .drop {
-      background: #f25f4c;
-      grid-column: 1 / span 3;
+    /* 第二行按钮：并排两个 */
+    .secondary-row {
+      display: flex;
+      gap: 12px;
+      width: 100%;
     }
-    .buttons .drop:hover {
+    .secondary-row button {
+      flex: 1;
+      padding: 12px 0;
+      font-size: 18px;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transition: background 0.2s, transform 0.1s;
+      touch-action: manipulation;
+    }
+    .btn-hard-drop {
+      background: #f25f4c;
+    }
+    .btn-hard-drop:hover {
       background: #e14b3b;
     }
+    .btn-rotate {
+      background: #4f4f6b;
+    }
+    .btn-rotate:hover {
+      background: #5e5e7f;
+    }
 
-    /* ==============================
-       6. 速度选择弹窗
-       ============================== */
+    /* =====================================================
+       7. 速度选择弹窗
+       ===================================================== */
     #startModal {
       position: absolute;
       top: 0; left: 0;
@@ -176,7 +198,7 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       transition: background 0.2s, transform 0.1s;
       touch-action: manipulation;
     }
@@ -187,16 +209,16 @@
       transform: scale(0.95);
     }
 
-    /* ==============================
-       7. 游戏结束弹窗
-       ============================== */
+    /* =====================================================
+       8. 游戏结束弹窗
+       ===================================================== */
     #gameOverModal {
       position: absolute;
       top: 0; left: 0;
       width: 100%;
       height: 100%;
       background: rgba(0, 0, 0, 0.7);
-      display: none;            /* 隐藏状态 */
+      display: none; /* 默认隐藏 */
       align-items: center;
       justify-content: center;
       flex-direction: column;
@@ -208,7 +230,8 @@
       border-radius: 8px;
       padding: 20px 24px;
       text-align: center;
-      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+      max-width: 80%;
     }
     #gameOverContent h2 {
       margin: 0 0 8px;
@@ -231,7 +254,7 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       transition: background 0.2s, transform 0.1s;
       touch-action: manipulation;
     }
@@ -244,60 +267,63 @@
   </style>
 </head>
 <body>
+  <div class="container">
 
-  <!-- ===== 游戏主画布 ===== -->
-  <div class="game-board">
-    <canvas id="tetris" width="240" height="400"></canvas>
+    <!-- 游戏画布 -->
+    <div class="game-board">
+      <canvas id="tetris" width="240" height="400"></canvas>
 
-    <!-- 速度选择弹窗（开始前） -->
-    <div id="startModal">
-      <h2>请选择下落速度</h2>
-      <div class="speed-buttons">
-        <button onclick="startGame(1000)">慢</button>
-        <button onclick="startGame(500)">中</button>
-        <button onclick="startGame(200)">快</button>
+      <!-- 速度选择弹窗（开始前） -->
+      <div id="startModal">
+        <h2>请选择下落速度</h2>
+        <div class="speed-buttons">
+          <button onclick="startGame(1000)">慢</button>
+          <button onclick="startGame(500)">中</button>
+          <button onclick="startGame(200)">快</button>
+        </div>
       </div>
-    </div>
 
-    <!-- 游戏结束弹窗（失败后） -->
-    <div id="gameOverModal">
-      <div id="gameOverContent">
-        <h2>游戏结束!</h2>
-        <p>最终分数: <span id="finalScore">0</span></p>
-        <div class="game-over-buttons">
-          <button onclick="restartGame(1000)">慢</button>
-          <button onclick="restartGame(500)">中</button>
-          <button onclick="restartGame(200)">快</button>
+      <!-- 游戏结束弹窗（失败后） -->
+      <div id="gameOverModal">
+        <div id="gameOverContent">
+          <h2>游戏结束!</h2>
+          <p>最终分数: <span id="finalScore">0</span></p>
+          <div class="game-over-buttons">
+            <button onclick="restartGame(1000)">慢</button>
+            <button onclick="restartGame(500)">中</button>
+            <button onclick="restartGame(200)">快</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- ===== 下方：提示框（左） + 控制框（右） ===== -->
-  <div class="bottom-panel">
-    <!-- 左侧：下一个方块 + 分数 + Logo -->
-    <div class="info-box">
-      <canvas id="next" width="80" height="80"></canvas>
-      <div id="score">0</div>
-      <!-- 直接使用 Base64 Data URI 嵌入 Logo 图像 -->
-      <img id="logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA+gAAAH0CAYAAACuKActAAAAAXNSR0IArs4c6QAAAIRlWElmTU0AKgAAAAgABQESAAMAAAABAAEA..." alt="GameBot Logo"/>
-    </div>
+    <!-- 下方并排：提示框（左） + 控制框（右） -->
+    <div class="bottom-panel">
+      <!-- 提示框：只显示下一个方块 + Logo -->
+      <div class="info-box">
+        <canvas id="next" width="80" height="80"></canvas>
+        <!-- 请把 YOUR_FULL_BASE64_STRING_HERE 替换为 Logo 完整 Base64，或改为 src="logo.png" -->
+        <img id="logo"
+             src="data:image/png;base64,YOUR_FULL_BASE64_STRING_HERE"
+             alt="GameBot Logo" />
+      </div>
 
-    <!-- 右侧：按钮网格 -->
-    <div class="control-box">
-      <div class="buttons">
-        <!-- 第一行：←、⟳、→ -->
-        <button onclick="move(-1)">←</button>
-        <button onclick="playerRotate()">⟳</button>
-        <button onclick="move(1)">→</button>
-        <!-- 第二行：左右留空，中间 ↓（软降落） -->
-        <div></div>
-        <button onclick="playerSoftDrop()">↓</button>
-        <div></div>
-        <!-- 第三行：跨三列的硬降落 -->
-        <button class="drop" onclick="playerHardDrop()">⤓</button>
+      <!-- 控制框：两行按钮 -->
+      <div class="control-box">
+        <!-- 第一行： ← ↓ → -->
+        <div class="control-grid">
+          <button onclick="move(-1)">←</button>
+          <button onclick="playerSoftDrop()">↓</button>
+          <button onclick="move(1)">→</button>
+        </div>
+        <!-- 第二行：快速下落 & 旋转 -->
+        <div class="secondary-row">
+          <button class="btn-hard-drop" onclick="playerHardDrop()">快速下落</button>
+          <button class="btn-rotate" onclick="playerRotate()">旋转</button>
+        </div>
       </div>
     </div>
+
   </div>
 
   <script>
@@ -308,12 +334,11 @@
     const context = canvas.getContext('2d');
     const nextCanvas = document.getElementById('next');
     const nextContext = nextCanvas.getContext('2d');
-    const scoreElement = document.getElementById('score');
     const gameOverModal = document.getElementById('gameOverModal');
     const startModal = document.getElementById('startModal');
     const finalScoreElement = document.getElementById('finalScore');
 
-    // 禁止双击缩放
+    // 禁止双击缩放（多指触摸时阻止默认放大）
     canvas.addEventListener('touchstart', e => {
       if (e.touches.length > 1) {
         e.preventDefault();
@@ -356,7 +381,7 @@
       if (type === 'Z') return [[7,7,0],[0,7,7],[0,0,0]];
     }
 
-    // 随机返回 'IOTSZJL'之一
+    // 随机返回 'IOTSZJL' 之一
     function randomPieceType() {
       const types = 'IOTSZJL';
       return types[Math.floor(types.length * Math.random())];
@@ -375,7 +400,7 @@
     // 下一个方块矩阵
     let nextPiece = createPiece(randomPieceType());
 
-    // 下落速度（ms），初始尚未选择
+    // 下落速度（ms），在 startGame/restartGame 时赋值
     let dropInterval = null;
     let dropCounter = 0;
     let lastTime = 0;
@@ -383,25 +408,22 @@
 
     /* =====================================================
        二、绘制网格（drawGrid）
-       - 黑底 + 细网格线
+       - 黑底 + 细灰色网格线
        ===================================================== */
     function drawGrid() {
-      // 1. 黑底
+      // 黑底
       context.fillStyle = '#000';
       context.fillRect(0, 0, canvas.width, canvas.height);
 
-      // 2. 细网格线
-      context.strokeStyle = '#333'; // 深灰色网格线
-      context.lineWidth = 0.05;     // 缩放后约 1px
-
-      // 2.1 竖线：x 从 0 到 12（共 13 条）
+      // 细灰网格线
+      context.strokeStyle = '#333';
+      context.lineWidth = 0.05; // 缩放后约 1px
       for (let x = 0; x <= 12; x++) {
         context.beginPath();
         context.moveTo(x, 0);
         context.lineTo(x, 20);
         context.stroke();
       }
-      // 2.2 横线：y 从 0 到 20（共 21 条）
       for (let y = 0; y <= 20; y++) {
         context.beginPath();
         context.moveTo(0, y);
@@ -437,9 +459,9 @@
        四、主绘制函数（draw）
        ===================================================== */
     function draw() {
-      drawGrid();                                 // 先画网格
-      drawMatrix(arena, { x: 0, y: 0 }, context); // 再画已固定方块
-      drawMatrix(player.matrix, player.pos, context); // 最后画当前方块
+      drawGrid();                                 // 先绘制网格
+      drawMatrix(arena, { x: 0, y: 0 }, context); // 再绘制已固定方块
+      drawMatrix(player.matrix, player.pos, context); // 最后绘制当前方块
     }
 
     /* =====================================================
@@ -449,8 +471,10 @@
       const [m, o] = [player.matrix, player.pos];
       for (let y = 0; y < m.length; ++y) {
         for (let x = 0; x < m[y].length; ++x) {
-          if (m[y][x] !== 0 &&
-              (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) {
+          if (
+            m[y][x] !== 0 &&
+            (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0
+          ) {
             return true;
           }
         }
@@ -484,14 +508,15 @@
         rowCount *= 2;
         y++;
       }
-      updateScore();
     }
 
     /* =====================================================
        七、方块旋转（顺时针 + 墙踢）
        ===================================================== */
     function rotateMatrix(matrix) {
-      return matrix[0].map((_, i) => matrix.map(row => row[i]).reverse());
+      return matrix[0].map((_, i) =>
+        matrix.map(row => row[i]).reverse()
+      );
     }
     function playerRotate() {
       const posX = player.pos.x;
@@ -524,7 +549,9 @@
     }
     function playerHardDrop() {
       if (!gameActive) return;
-      while (!collide(arena, player)) { player.pos.y++; }
+      while (!collide(arena, player)) {
+        player.pos.y++;
+      }
       player.pos.y--;
       merge(arena, player);
       arenaSweep();
@@ -565,14 +592,7 @@
     }
 
     /* =====================================================
-       十一、更新分数到页面
-       ===================================================== */
-    function updateScore() {
-      scoreElement.textContent = player.score;
-    }
-
-    /* =====================================================
-       十二、游戏循环函数
+       十一、游戏循环函数
        ===================================================== */
     function update(time = 0) {
       if (!gameActive) return;
@@ -583,12 +603,11 @@
         playerSoftDrop();
       }
       draw();
-      updateScore();
       requestAnimationFrame(update);
     }
 
     /* =====================================================
-       十三、显示“游戏结束”弹窗
+       十二、显示“游戏结束”弹窗
        ===================================================== */
     function showGameOver() {
       gameActive = false;
@@ -597,7 +616,7 @@
     }
 
     /* =====================================================
-       十四、启动游戏（设置速度、隐藏开始弹窗、重置棋盘）
+       十三、启动游戏（设置速度、隐藏开始弹窗、重置棋盘）
        ===================================================== */
     function startGame(interval) {
       dropInterval = interval;
@@ -605,7 +624,6 @@
       startModal.style.display = 'none';
       arena = createMatrix(12, 20);
       player.score = 0;
-      updateScore();
       player.matrix = createPiece(randomPieceType());
       player.pos.y = 0;
       player.pos.x = Math.floor(arena[0].length / 2) -
@@ -618,7 +636,7 @@
     }
 
     /* =====================================================
-       十五、“游戏失败后重新开始”——同样选择速度
+       十四、“游戏失败后重新开始”——同样选择速度
        ===================================================== */
     function restartGame(interval) {
       dropInterval = interval;
@@ -626,7 +644,6 @@
       gameOverModal.style.display = 'none';
       arena = createMatrix(12, 20);
       player.score = 0;
-      updateScore();
       player.matrix = createPiece(randomPieceType());
       player.pos.y = 0;
       player.pos.x = Math.floor(arena[0].length / 2) -
@@ -639,7 +656,7 @@
     }
 
     /* =====================================================
-       十六、键盘监听
+       十五、键盘监听
        ===================================================== */
     document.addEventListener('keydown', event => {
       switch (event.key) {
