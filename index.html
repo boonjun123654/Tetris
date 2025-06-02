@@ -774,10 +774,12 @@ function getGhostY(arena, player) {
         case 'ArrowDown':
           playerSoftDrop();
           break;
-        case ' ':
-          // 如果想保留空格硬降落的功能，可以在这里调用：
-          // playerHardDrop();
-          break;
+        case 'Space':
+      // 阻止浏览器在按空格时滚动页面
+      event.preventDefault();
+      playerHardDrop();
+      draw();
+      break;
       }
     });
   </script>
