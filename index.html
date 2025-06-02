@@ -775,13 +775,13 @@ function getGhostY(arena, player) {
           playerSoftDrop();
           break;
         case 'Space':
-      // 阻止浏览器在按空格时滚动页面
-      event.preventDefault();
-      playerHardDrop();
-      draw();
-      break;
-      }
-    });
+          event.preventDefault();
+          playerHardDrop();
+          draw();
+          break;
+          }
+        });
+
   </script>
 </body>
 </html>
