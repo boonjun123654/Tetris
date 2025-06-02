@@ -405,29 +405,76 @@
         context.stroke();
       }
     }
+function roundRect(ctx, x, y, width, height, radius) {
+  // 确保圆角半径不超过宽/高的一半
+  if (radius > width / 2) radius = width / 2;
+  if (radius > height / 2) radius = height / 2;
+
+  ctx.beginPath();
+  // 从左上角开始，先向右画顶边，直到距离右边圆角起点为 radius 的位置
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  // 绘制右上角的圆弧
+  ctx.arcTo(x + width, y, x + width, y + radius, radius);
+  // 向下画右侧边，直到距离底部圆角起点为 radius 的位置
+  ctx.lineTo(x + width, y + height - radius);
+  // 绘制右下角的圆弧
+  ctx.arcTo(x + width, y + height, x + width - radius, y + height, radius);
+  // 向左画底边，直到距离左边圆角起点为 radius 的位置
+  ctx.lineTo(x + radius, y + height);
+  // 绘制左下角的圆弧
+  ctx.arcTo(x, y + height, x, y + height - radius, radius);
+  // 向上画左侧边，直到距离顶部圆角起点为 radius 的位置
+  ctx.lineTo(x, y + radius);
+  // 绘制左上角的圆弧，回到起始点 (x + radius, y)
+  ctx.arcTo(x, y, x + radius, y, radius);
+  ctx.closePath();
+}
 
     /* =====================================================
        三、绘制方块（drawMatrix）
-       - 带发光阴影 + 边框
+       
        ===================================================== */
     function drawMatrix(matrix, offset, ctx) {
-      matrix.forEach((row, y) => {
-        row.forEach((value, x) => {
-          if (value !== 0) {
-            ctx.save();
-            ctx.shadowBlur = 0;
-            ctx.shadowColor = colors[value];
-            ctx.fillStyle = colors[value];
-            ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
-            ctx.shadowBlur = 0;
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 0.05;
-            ctx.strokeRect(x + offset.x, y + offset.y, 1, 1);
-            ctx.restore();
-          }
-        });
-      });
-    }
+  const padding = 0.05;
+  const size = 1 - 2 * padding;
+  const radius = 0.1;
+
+  matrix.forEach((row, y) => {
+    row.forEach((value, x) => {
+      if (value !== 0) {
+        ctx.save();
+
+        // 1) 设置阴影（可选，如果不想要阴影可把这两行注释或改成 0）
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = colors[value];
+
+        // 2) 设置填充颜色
+        ctx.fillStyle = colors[value];
+        // 2.1) 调用 roundRect，将圆角路径创建出来
+        roundRect(
+          ctx,
+          x + offset.x + padding,   // 矩形左上角 X 坐标
+          y + offset.y + padding,   // 矩形左上角 Y 坐标
+          size,                     // 矩形宽度（0.9 单位）
+          size,                     // 矩形高度（0.9 单位）
+          radius                    // 圆角半径（0.1 单位）
+        );
+        // 2.2) 填充这个圆角路径
+        ctx.fill();
+
+        // 3) 去掉阴影，开始描边
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#222';   // 边框颜色
+        ctx.lineWidth = 0.05;       // 边框线宽（0.05 单位 = scale(20) 时约 1px）
+        // 3.1) 直接在同一个圆角路径上描边
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    });
+  });
+}
 
     /* =====================================================
        四、主绘制函数（draw）
