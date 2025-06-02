@@ -45,8 +45,7 @@
       position: relative;
       overflow: hidden;
       touch-action: none;
-      /* 不要靠近上边缘 */
-      margin-top: 8px;
+      margin-top: 8px; /* 不要靠近上边缘 */
     }
     #tetris {
       width: 100%;
@@ -62,24 +61,25 @@
       max-width: 360px;
       display: flex;
       justify-content: space-between;
-      column-gap: 12px;  /* 2号和3号之间留空间 */
-      /* 不要靠近下边缘 */
-      margin-bottom: 8px;
+      column-gap: 8px;  /* 提示框与控制框之间留小间隙 */
+      margin-bottom: 8px; /* 不要靠近下边缘 */
     }
-    /* 提示框 & 控制框：占父容器宽度的 48% */
+    /* 提示框 & 控制框：宽度各占50%，高度固定为较薄的横条 */
     .info-box, .control-box {
-      width: 48%;
+      width: 50%;
       background: #1f1f2e;
       border-radius: 8px;
       box-shadow: 0 0 6px rgba(0,0,0,0.3);
       display: flex;
-      flex-direction: column;
       align-items: center;
-      padding: 12px;
+      justify-content: center;
+      padding: 6px; /* 扁平化后内边距缩小 */
+      box-sizing: border-box;
+      height: 100px; /* 固定高度，使其呈现横向长方形 */
     }
 
     /* ==============================
-       4. “下一个方块”+ 分数 + Logo
+       4. “下一个方块” 画布
        ============================== */
     #next {
       width: 80px;
@@ -88,19 +88,6 @@
       border: 2px solid #333;
       border-radius: 6px;
       display: block;
-      margin-bottom: 8px;
-    }
-    #score {
-      font-size: 20px;
-      color: #faae2a;
-      margin-bottom: 8px;
-    }
-    /* 放大 Logo 到合适 Info 框内大小 */
-    #logo {
-      width: 100px;
-      height: auto;
-      margin-top: 8px;
-      object-fit: contain;
     }
 
     /* ==============================
@@ -109,10 +96,9 @@
     .buttons {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 60px);
-      gap: 10px;
+      grid-template-rows: repeat(2, 60px);
+      gap: 8px;
       width: 100%;
-      margin-top: 8px;
     }
     .buttons button {
       margin: 0;
@@ -135,13 +121,9 @@
     .buttons button:active {
       transform: scale(0.95);
     }
-    /* 硬降落按钮跨三列 */
-    .buttons .drop {
-      background: #f25f4c;
-      grid-column: 1 / span 3;
-    }
-    .buttons .drop:hover {
-      background: #e14b3b;
+    /* 第二行中间的 ↓ 按钮，使用网格占位，让它居中 */
+    .buttons .down {
+      grid-column: 2 / 3; /* 第二列 */
     }
 
     /* ==============================
@@ -275,12 +257,9 @@
 
   <!-- ===== 下方：提示框（左） + 控制框（右） ===== -->
   <div class="bottom-panel">
-    <!-- 左侧：下一个方块 + 分数 + Logo -->
+    <!-- 左侧：仅“下一个方块”画布 -->
     <div class="info-box">
       <canvas id="next" width="80" height="80"></canvas>
-      <div id="score">0</div>
-      <!-- 直接使用 Base64 Data URI 嵌入 Logo 图像 -->
-      <img id="logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA+gAAAH0CAYAAACuKActAAAAAXNSR0IArs4c6QAAAIRlWElmTU0AKgAAAAgABQESAAMAAAABAAEA..." alt="GameBot Logo"/>
     </div>
 
     <!-- 右侧：按钮网格 -->
@@ -290,12 +269,10 @@
         <button onclick="move(-1)">←</button>
         <button onclick="playerRotate()">⟳</button>
         <button onclick="move(1)">→</button>
-        <!-- 第二行：左右留空，中间 ↓（软降落） -->
+        <!-- 第二行：中间 ↓（软降落），左右留空 -->
         <div></div>
-        <button onclick="playerSoftDrop()">↓</button>
+        <button class="down" onclick="playerSoftDrop()">↓</button>
         <div></div>
-        <!-- 第三行：跨三列的硬降落 -->
-        <button class="drop" onclick="playerHardDrop()">⤓</button>
       </div>
     </div>
   </div>
@@ -308,7 +285,7 @@
     const context = canvas.getContext('2d');
     const nextCanvas = document.getElementById('next');
     const nextContext = nextCanvas.getContext('2d');
-    const scoreElement = document.getElementById('score');
+    const scoreElement = document.getElementById('score'); // 虽然移除了 UI，但 JS 里保留 updateScore 调用
     const gameOverModal = document.getElementById('gameOverModal');
     const startModal = document.getElementById('startModal');
     const finalScoreElement = document.getElementById('finalScore');
@@ -522,15 +499,6 @@
       }
       dropCounter = 0;
     }
-    function playerHardDrop() {
-      if (!gameActive) return;
-      while (!collide(arena, player)) { player.pos.y++; }
-      player.pos.y--;
-      merge(arena, player);
-      arenaSweep();
-      playerResetOrGameOver();
-      dropCounter = 0;
-    }
     function move(dir) {
       if (!gameActive) return;
       player.pos.x += dir;
@@ -568,7 +536,8 @@
        十一、更新分数到页面
        ===================================================== */
     function updateScore() {
-      scoreElement.textContent = player.score;
+      // 虽然提示框里移除了分数展示，但保留这一函数以便未来需要时启用
+      // scoreElement.textContent = player.score;
     }
 
     /* =====================================================
@@ -583,7 +552,6 @@
         playerSoftDrop();
       }
       draw();
-      updateScore();
       requestAnimationFrame(update);
     }
 
@@ -605,7 +573,6 @@
       startModal.style.display = 'none';
       arena = createMatrix(12, 20);
       player.score = 0;
-      updateScore();
       player.matrix = createPiece(randomPieceType());
       player.pos.y = 0;
       player.pos.x = Math.floor(arena[0].length / 2) -
@@ -626,7 +593,6 @@
       gameOverModal.style.display = 'none';
       arena = createMatrix(12, 20);
       player.score = 0;
-      updateScore();
       player.matrix = createPiece(randomPieceType());
       player.pos.y = 0;
       player.pos.x = Math.floor(arena[0].length / 2) -
@@ -656,7 +622,8 @@
           playerSoftDrop();
           break;
         case ' ':
-          playerHardDrop();
+          // 如果想保留空格硬降落的功能，可以在这里调用：
+          // playerHardDrop();
           break;
       }
     });
