@@ -6,6 +6,11 @@
   <meta name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>俄罗斯方块（增强版）</title>
+  <link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-pJ/0K+rvk5RLL7Xugv2x6668gyYcZDyxJGrInud7JxBJ3lB8+w1r+jvWFQxCdQfwtcEdPKfC1lOApgnwLnVFrg=="
+      crossorigin="anonymous" referrerpolicy="no-referrer" />
+
   <style>
     /* ==============================
        1. 页面整体样式
@@ -139,7 +144,14 @@
 
     .buttons button.hard-drop {
       background: #ff4f4f; 
+    }
 
+    .buttons button i {
+      /* 给图标左右各追加 4px 内边距 */
+      padding: 0 4px;
+      /* 如果想上下也留白，就 use padding: 4px; 完整效果 */
+      /* padding: 4px; */
+      pointer-events: none;  /* 确保图标本身不拦截点击，点击事件由 button 触发 */
     }
 
     /* 第二行中间的 ↓ 按钮，使用网格占位，让它居中 */
@@ -284,19 +296,28 @@
     </div>
 
     <!-- 右侧：按钮网格 -->
-    <div class="control-box">
-      <div class="buttons">
-        <!-- 第一行：←、⟳、→ -->
-        <button onclick="move(-1)">←</button>
-        <button onclick="playerRotate()">⟳</button>
-        <button onclick="move(1)">→</button>
-        <!-- 第二行：中间 ↓（软降落），左右留空 -->
-        <div></div>
-        <button class="down" onclick="playerSoftDrop()">↓</button>
-        <button class="hard-drop" onclick="playerHardDrop()">⤓</button>
-      </div>
-    </div>
+<div class="control-box">
+  <div class="buttons">
+    <!-- 第一行：左移、旋转、右移 -->
+    <button onclick="move(-1)" aria-label="向左移动">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <button onclick="playerRotate()" aria-label="旋转方块">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+    <button onclick="move(1)" aria-label="向右移动">
+      <i class="fas fa-arrow-right"></i>
+    </button>
+    <!-- 第二行：留空占位、软降、硬降 -->
+    <div></div>
+    <button class="down" onclick="playerSoftDrop()" aria-label="软降">
+      <i class="fas fa-arrow-down"></i>
+    </button>
+    <button class="hard-drop" onclick="playerHardDrop()" aria-label="硬降">
+      <i class="fas fa-angle-double-down"></i>
+    </button>
   </div>
+</div>
 
   <script>
     /* =====================================================
