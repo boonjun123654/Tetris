@@ -387,8 +387,8 @@
       context.fillRect(0, 0, canvas.width, canvas.height);
 
       // 2. 细网格线
-      context.strokeStyle = '#333'; // 深灰色网格线
-      context.lineWidth = 0.05;     // 缩放后约 1px
+      context.strokeStyle = 'rgba(255,255,255,0.05)';
+      context.lineWidth = 0.02;     // 缩放后约 1px
 
       // 2.1 竖线：x 从 0 到 12（共 13 条）
       for (let x = 0; x <= 12; x++) {
