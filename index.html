@@ -481,11 +481,35 @@ function roundRect(ctx, x, y, width, height, radius) {
     /* =====================================================
        四、主绘制函数（draw）
        ===================================================== */
-    function draw() {
-      drawGrid();                                 // 先画网格
-      drawMatrix(arena, { x: 0, y: 0 }, context); // 再画已固定方块
-      drawMatrix(player.matrix, player.pos, context); // 最后画当前方块
-    }
+    /* =====================================================
+   七、绘制画面主函数 draw()
+   功能：先画网格、再画已固定方块，再画幽灵方块，最后画当前下落方块
+   ===================================================== */
+function draw() {
+  // —— ① 先调用 drawGrid()，它会帮我们清屏成黑底，并画出网格 —— 
+  drawGrid();
+
+  // —— ② 再画已经“锁定”在 arena 中的方块 —— 
+  drawMatrix(arena, { x: 0, y: 0 }, context);
+
+  // —— ③ 计算“幽灵方块”应该落地的 Y 坐标 ghostY —— 
+  const ghostY = getGhostY(arena, player);
+
+  // —— ④ 画“幽灵方块” —— 
+  //     用半透明方式（比如 alpha=0.3）把 ghost 画出来
+  context.save();                  // 保存当前 context 状态（包括全局 alpha、填充样式等）
+  context.globalAlpha = 0.3;       // 设为 30% 不透明，其余 70% 透明
+  drawMatrix(
+    player.matrix,                // 幽灵的形状跟 player 一模一样
+    { x: player.pos.x, y: ghostY }, // 放到刚才算出的 “ghostY” 这一行
+    context
+  );
+  context.restore();               // 恢复 context 到之前的状态（讓 alpha 恢复到 1）
+
+  // —— ⑤ 最后画当前玩家下落方块 —— 
+  drawMatrix(player.matrix, { x: player.pos.x, y: player.pos.y }, context);
+}
+
 
     /* =====================================================
        五、碰撞检测 & 合并
@@ -512,6 +536,21 @@ function roundRect(ctx, x, y, width, height, radius) {
       });
     }
 
+function getGhostY(arena, player) {
+  // ① 先复制一个“临时方块”对象 ghost，x 坐标与 player 一样，y 坐标也一样
+  const ghost = {
+    pos: { x: player.pos.x, y: player.pos.y },
+    matrix: player.matrix
+  };
+
+  // ② 不断让“ghost.pos.y”加 1，直到检测 collide(arena, ghost) 返回 true 为止
+  while (!collide(arena, ghost)) {
+    ghost.pos.y++;
+  }
+
+  // ③ 当退出 while 说明 ghost.pos.y 已经超出合法区域，再回退一行，才是真正的落地坐标
+  return ghost.pos.y - 1;
+}
     /* =====================================================
        六、消行并更新分数
        ===================================================== */
