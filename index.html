@@ -415,12 +415,12 @@
         row.forEach((value, x) => {
           if (value !== 0) {
             ctx.save();
-            ctx.shadowBlur = 8;
+            ctx.shadowBlur = 0;
             ctx.shadowColor = colors[value];
             ctx.fillStyle = colors[value];
             ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
             ctx.shadowBlur = 0;
-            ctx.strokeStyle = '#222';
+            ctx.strokeStyle = '#fff';
             ctx.lineWidth = 0.05;
             ctx.strokeRect(x + offset.x, y + offset.y, 1, 1);
             ctx.restore();
