@@ -77,7 +77,7 @@
   box-sizing: border-box;
 }
 .control-box {
-  width: 65%;
+  width: 70%;
   height: 140px;
   padding: 10px;
   background: #2b2b3a;
@@ -134,6 +134,13 @@
     .buttons button:active {
       transform: scale(0.95);
     }
+
+    .buttons button.hard-drop {
+  /* 如果想让硬降按钮和其他按钮外观完全一致，可以不写任何额外样式。
+     如果希望它背景色稍微不同，举例： */
+  background: #666;       /* 比方向键略深一点 */
+    }
+
     /* 第二行中间的 ↓ 按钮，使用网格占位，让它居中 */
     .buttons .down {
       grid-column: 2 / 3; /* 第二列 */
@@ -285,7 +292,7 @@
         <!-- 第二行：中间 ↓（软降落），左右留空 -->
         <div></div>
         <button class="down" onclick="playerSoftDrop()">↓</button>
-        <div></div>
+        <button class="hard-drop" onclick="playerHardDrop()">⤓</button>
       </div>
     </div>
   </div>
@@ -512,6 +519,23 @@
       }
       dropCounter = 0;
     }
+
+    function playerHardDrop() {
+      // 立即把 player.pos.y 往下推
+      if (!gameActive) return;
+      // 把方块一直往下移动，直到碰到为止
+      while (!collide(arena, player)) {
+        player.pos.y++;
+      }
+      // 一旦碰撞，就回退一步，合并到场景
+      player.pos.y--;
+      merge(arena, player);
+      arenaSweep();
+      playerResetOrGameOver();
+      // 重置掉下计时
+      dropCounter = 0;
+    }
+
     function move(dir) {
       if (!gameActive) return;
       player.pos.x += dir;
