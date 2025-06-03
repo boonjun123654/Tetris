@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh">
+  
 <head>
   <meta charset="UTF-8"/>
   <!-- 禁止双击放大 & 禁止缩放 -->
@@ -347,7 +348,7 @@
 
   <!-- ===== 游戏主画布 ===== -->
   <div class="game-board">
-    <canvas id="tetris" width="192" height="320"></canvas>
+    <canvas id="tetris" width="160" height="320"></canvas>
 
     <!-- 速度选择弹窗（开始前） -->
     <div id="startModal">
@@ -481,7 +482,7 @@
     }
 
     // 棋盘矩阵：12 列 × 20 行
-    let arena = createMatrix(12, 20);
+    let arena = createMatrix(10, 20);
 
     // player 对象：存储当前位置、当前方块矩阵、得分
     const player = {
