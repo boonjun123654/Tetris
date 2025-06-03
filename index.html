@@ -58,6 +58,64 @@
   display: block;
 }
 
+/* ========= 弹窗遮罩（模态层） =========== */
+.modal-overlay {
+  display: none;          /* 默认隐藏 */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7); /* 半透明黑遮罩 */
+  align-items: center;    /* 垂直居中 */
+  justify-content: center;/* 水平居中 */
+  z-index: 9999;          /* 确保在最上层 */
+}
+
+/* 内部内容容器 */
+.modal-content {
+  background: #1f1f2e;    /* 深色背景，与整体配色一致 */
+  padding: 24px 32px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  color: #fff;            /* 文字白色 */
+  min-width: 260px;
+}
+
+/* 标题 */
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 24px;
+}
+
+/* 分数文字 */
+.modal-content p {
+  margin-bottom: 24px;
+  font-size: 18px;
+}
+
+/* “继续游戏”按钮 */
+#resume-button {
+  width: 100%;
+  padding: 10px 0;
+  background: #4f46e5;    /* 紫色示例 */
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+#resume-button:hover {
+  background: #6c5ce7;
+}
+#resume-button:active {
+  transform: scale(0.97);
+}
+
+
     /* ==============================
        3. 下方并排区域（提示 + 控制）
        ============================== */
@@ -73,7 +131,7 @@
     }
 .info-box {
   width: 30%;
-  height: 100px;
+  height: 140px;
   padding: 8px;
   background: #1f1f2e;
   border-radius: 8px;
@@ -82,7 +140,34 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
+
+ #pause-button {
+  /* 让它和 .info-box 保持同样宽度 */
+  width: 100%;           /* 和 .info-box 一致 */
+  max-width: 280px;     /* 可选：限制最大像素宽度 */
+  height: 36px;         /* 高度固定 36px，看起来像一条长条 */
+  margin-top: 8px;      /* 提示框下方留 8px 间距 */
+  background: #4f46e5;  /* 示例：紫色背景 */
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+#pause-button:hover {
+  background: #6c5ce7;  /* 悬停时变浅 */
+}
+#pause-button:active {
+  transform: scale(0.97); /* 按下时缩放反馈 */
+}
+
 .control-box {
   width: 70%;
   height: 140px;
@@ -262,7 +347,7 @@
 
   <!-- ===== 游戏主画布 ===== -->
   <div class="game-board">
-    <canvas id="tetris" width="240" height="400"></canvas>
+    <canvas id="tetris" width="216" height="360"></canvas>
 
     <!-- 速度选择弹窗（开始前） -->
     <div id="startModal">
@@ -293,7 +378,9 @@
     <!-- 左侧：仅“下一个方块”画布 -->
     <div class="info-box">
       <canvas id="next" width="80" height="80"></canvas>
+      <button id="pause-button">暂停</button>
     </div>
+
 
     <!-- 右侧：按钮网格 -->
 <div class="control-box">
@@ -319,7 +406,19 @@
   </div>
 </div>
 
+</div>
+
+<div id="pauseModal" class="modal-overlay">
+    <div class="modal-content">
+      <h2>游戏已暂停</h2>
+      <p>当前得分：<span id="pauseScore">0</span></p>
+      <button id="resume-button">继续游戏</button>
+    </div>
+  </div>
   <script>
+
+  let isPaused = false;
+
     /* =====================================================
        一、全局变量与初始化
        ===================================================== */
@@ -340,8 +439,8 @@
     }, { passive: false });
 
     // 缩放 Canvas 坐标：20×20 像素 = 1 单位
-    context.scale(20, 20);
-    nextContext.scale(20, 20);
+    context.scale(18, 18);
+    nextContext.scale(18, 18);
 
     // 7 种方块颜色（带发光阴影）
     const colors = [
@@ -721,15 +820,15 @@ function getGhostY(arena, player) {
        十四、启动游戏（设置速度、隐藏开始弹窗、重置棋盘）
        ===================================================== */
     function startGame(interval) {
-      dropInterval = interval;
+      isPaused = false; 
       gameActive = true;
-      startModal.style.display = 'none';
+      startModal.style.display = 'none'; // 隐藏选择速度弹窗
+      dropInterval = interval;
       arena = createMatrix(12, 20);
       player.score = 0;
       player.matrix = createPiece(randomPieceType());
       player.pos.y = 0;
-      player.pos.x = Math.floor(arena[0].length / 2) -
-                     Math.floor(player.matrix[0].length / 2);
+      player.pos.x = Math.floor(arena[0].length / 2) - Math.floor(player.matrix[0].length / 2);
       nextPiece = createPiece(randomPieceType());
       drawNext();
       lastTime = 0;
@@ -781,6 +880,31 @@ function getGhostY(arena, player) {
           break;
           }
         });
+
+
+  // —— 在现有脚本末尾，插入以下代码 —— 
+  document.getElementById('pause-button').addEventListener('click', pauseGame);
+  document.getElementById('resume-button').addEventListener('click', pauseGame);
+
+function pauseGame() {
+  isPaused = !isPaused;
+
+  if (isPaused) {
+    // ① 暂停画面逻辑
+    gameActive = false;
+    const currentScore = player.score;
+    document.getElementById('pauseScore').textContent = currentScore;
+    document.getElementById('pauseModal').style.display = 'flex';
+  } else {
+    // ② 恢复游戏逻辑
+    document.getElementById('pauseModal').style.display = 'none';
+    gameActive = true;
+    lastTime = performance.now();
+    requestAnimationFrame(update);
+  }
+}
+
+
 
   </script>
 </body>
