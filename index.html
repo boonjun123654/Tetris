@@ -347,7 +347,7 @@
 
   <!-- ===== 游戏主画布 ===== -->
   <div class="game-board">
-    <canvas id="tetris" width="216" height="360"></canvas>
+    <canvas id="tetris" width="192" height="320"></canvas>
 
     <!-- 速度选择弹窗（开始前） -->
     <div id="startModal">
@@ -439,8 +439,8 @@
     }, { passive: false });
 
     // 缩放 Canvas 坐标：20×20 像素 = 1 单位
-    context.scale(18, 18);
-    nextContext.scale(18, 18);
+    context.scale(16, 16);
+    nextContext.scale(16, 16);
 
     // 7 种方块颜色（带发光阴影）
     const colors = [
