@@ -33,7 +33,7 @@
        2. 游戏主画布容器
        ============================== */
 .game-board {
-  height: 480px;
+  aspect-ratio: 240 / 400;
   width: 95vw;
   max-width: 288px;
 
@@ -861,27 +861,26 @@ function getGhostY(arena, player) {
        十六、键盘监听
        ===================================================== */
     document.addEventListener('keydown', event => {
-      switch (event.key) {
-        case 'ArrowLeft':
-          move(-1);
-          break;
-        case 'ArrowRight':
-          move(1);
-          break;
-        case 'ArrowUp':
-          playerRotate();
-          break;
-        case 'ArrowDown':
-          playerSoftDrop();
-          break;
-        case 'Space':
-          event.preventDefault();
-          playerHardDrop();
-          draw();
-          break;
-          }
-        });
-
+   switch (event.code) {
+     case 'ArrowLeft':
+       move(-1);
+       break;
+     case 'ArrowRight':
+       move(1);
+       break;
+     case 'ArrowUp':
+       playerRotate();
+       break;
+     case 'ArrowDown':
+       playerSoftDrop();
+       break;
+     case 'Space':
+       event.preventDefault();
+       playerHardDrop();
+       draw();
+       break;
+   }
+ });
 
   // —— 在现有脚本末尾，插入以下代码 —— 
   document.getElementById('pause-button').addEventListener('click', pauseGame);
