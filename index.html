@@ -16,6 +16,12 @@
     /* ==============================
        1. 页面整体样式
        ============================== */
+
+    :root {
+      --base-width: 360px;
+      --page-scale: 1;
+    }
+
     html, body {
       margin: 0;
       padding: 0;
@@ -904,6 +910,19 @@ function pauseGame() {
   }
 }
 
+const rootStyle = document.documentElement.style;
+  const baseWidth = parseFloat(getComputedStyle(document.documentElement)
+    .getPropertyValue('--base-width'));
+
+  function updatePageScale() {
+    let scale = window.innerWidth / baseWidth;
+    // 如果你想“只缩小不放大”，可以加： scale = Math.min(scale, 1);
+    // 如果你想“只放大不缩小”，可以加： scale = Math.max(scale, 1);
+    rootStyle.setProperty('--page-scale', scale);
+  }
+
+  window.addEventListener('load', updatePageScale);
+  window.addEventListener('resize', updatePageScale);
 
 
   </script>
