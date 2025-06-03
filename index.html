@@ -347,6 +347,30 @@
     .game-over-buttons button:active {
       transform: scale(0.95);
     }
+
+/* —— 新增：固定底部浮动按钮，让它避开浏览器底部导航栏 —— */
+#floatBtn {
+  position: fixed;       /* 固定定位 */
+  bottom: env(safe-area-inset-bottom); /* 距离底部安全区底边 */
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  z-index: 10000;        /* 确保在最顶层 */
+}
+
+/* 兼容旧版 iOS Safari（写两次以防兼容问题） */
+#floatBtn {
+  bottom: constant(safe-area-inset-bottom);
+  bottom: env(safe-area-inset-bottom);
+}
+
   </style>
 </head>
 <body>
@@ -925,5 +949,6 @@ const rootStyle = document.documentElement.style;
 
 
   </script>
+  <button id="floatBtn">分享</button>
 </body>
 </html>
