@@ -33,9 +33,9 @@
        2. 游戏主画布容器
        ============================== */
 .game-board {
-  height: 240px;
+  height: 450px;
   width: 95vw;
-  max-width: 240px;
+  max-width: 450px;
 
   background: #000;
   border: 4px solid #6E44FF;
@@ -348,7 +348,7 @@
 
   <!-- ===== 游戏主画布 ===== -->
   <div class="game-board">
-    <canvas id="tetris" width="120" height="240"></canvas>
+    <canvas id="tetris" width="240" height="400"></canvas>
 
     <!-- 速度选择弹窗（开始前） -->
     <div id="startModal">
@@ -440,8 +440,8 @@
     }, { passive: false });
 
     // 缩放 Canvas 坐标：20×20 像素 = 1 单位
-    context.scale(12, 12);
-    nextContext.scale(12, 12);
+    context.scale(20, 20);
+    nextContext.scale(20, 20);
 
     // 7 种方块颜色（带发光阴影）
     const colors = [
@@ -482,7 +482,7 @@
     }
 
     // 棋盘矩阵：12 列 × 20 行
-    let arena = createMatrix(10, 20);
+    let arena = createMatrix(12, 20);
 
     // player 对象：存储当前位置、当前方块矩阵、得分
     const player = {
