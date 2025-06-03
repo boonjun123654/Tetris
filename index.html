@@ -6,7 +6,7 @@
   <!-- 禁止双击放大 & 禁止缩放 -->
   <meta name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>俄罗斯方块（增强版）</title>
+  <title>Game_Bot_Tetris</title>
   <link
   rel="stylesheet"
   href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css"
@@ -352,23 +352,23 @@
 
     <!-- 速度选择弹窗（开始前） -->
     <div id="startModal">
-      <h2>请选择下落速度</h2>
+      <h2>Please Select Game Difficulty</h2>
       <div class="speed-buttons">
-        <button onclick="startGame(1000)">慢</button>
-        <button onclick="startGame(500)">中</button>
-        <button onclick="startGame(200)">快</button>
+        <button onclick="startGame(1000)">1</button>
+        <button onclick="startGame(500)">2</button>
+        <button onclick="startGame(200)">3</button>
       </div>
     </div>
 
     <!-- 游戏结束弹窗（失败后） -->
     <div id="gameOverModal">
       <div id="gameOverContent">
-        <h2>游戏结束!</h2>
-        <p>最终分数: <span id="finalScore">0</span></p>
+        <h2>Game Over!</h2>
+        <p>Final Score: <span id="finalScore">0</span></p>
         <div class="game-over-buttons">
-          <button onclick="restartGame(1000)">慢</button>
-          <button onclick="restartGame(500)">中</button>
-          <button onclick="restartGame(200)">快</button>
+          <button onclick="restartGame(1000)">1</button>
+          <button onclick="restartGame(500)">2</button>
+          <button onclick="restartGame(200)">3</button>
         </div>
       </div>
     </div>
@@ -379,7 +379,7 @@
     <!-- 左侧：仅“下一个方块”画布 -->
     <div class="info-box">
       <canvas id="next" width="80" height="80"></canvas>
-      <button id="pause-button">暂停</button>
+      <button id="pause-button">Pause</button>
     </div>
 
 
@@ -412,8 +412,8 @@
 <div id="pauseModal" class="modal-overlay">
     <div class="modal-content">
       <h2>游戏已暂停</h2>
-      <p>当前得分：<span id="pauseScore">0</span></p>
-      <button id="resume-button">继续游戏</button>
+      <p>Current Score：<span id="pauseScore">0</span></p>
+      <button id="resume-button">Continue</button>
     </div>
   </div>
   <script>
